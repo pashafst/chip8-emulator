@@ -5,6 +5,7 @@ use std::time::{Duration, Instant};
 
 use chip8::audio::SquareWave;
 use chip8::chip8::*;
+
 use sdl2::audio::AudioSpecDesired;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
@@ -15,7 +16,7 @@ use sdl2::render::WindowCanvas;
 const SCALE: u32 = 15;
 const WINDOW_WIDTH: u32 = (SCREEN_WIDTH as u32) * SCALE;
 const WINDOW_HEIGHT: u32 = (SCREEN_HEIGHT as u32) * SCALE;
-const TICKS_PER_FRAME: usize = 10;
+const TICKS_PER_LOOP: usize = 10;
 
 fn main() {
     let args: Vec<_> = env::args().collect();
@@ -76,6 +77,7 @@ fn main() {
                     keycode: Some(Keycode::Escape),
                     ..
                 } => break 'gameloop,
+
                 Event::KeyDown {
                     keycode: Some(key), ..
                 } => {
@@ -83,6 +85,7 @@ fn main() {
                         chip8_emu.keypress(k, true);
                     }
                 }
+
                 Event::KeyUp {
                     keycode: Some(key), ..
                 } => {
@@ -90,11 +93,12 @@ fn main() {
                         chip8_emu.keypress(k, false);
                     }
                 }
+
                 _ => {}
             }
         }
 
-        for _ in 0..TICKS_PER_FRAME {
+        for _ in 0..TICKS_PER_LOOP {
             chip8_emu.tick();
         }
 
