@@ -21,7 +21,7 @@ const TICKS_PER_LOOP: usize = 10;
 fn main() {
     let args: Vec<_> = env::args().collect();
     if args.len() != 2 {
-        eprintln!("Usage: cargo run path/to/game");
+        eprintln!("Usage: {} path/to/game", &args[0]);
         return;
     }
 
