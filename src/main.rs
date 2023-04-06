@@ -3,19 +3,13 @@ use std::fs::File;
 use std::io::Read;
 use std::time::{Duration, Instant};
 
-use chip8::audio::SquareWave;
 use chip8::chip8::*;
+use chip8::drivers::audio::AudioDriver;
 
-use sdl2::audio::AudioSpecDesired;
+use chip8::drivers::video::VideoDriver;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
-use sdl2::pixels::Color;
-use sdl2::rect::Rect;
-use sdl2::render::WindowCanvas;
 
-const SCALE: u32 = 15;
-const WINDOW_WIDTH: u32 = (SCREEN_WIDTH as u32) * SCALE;
-const WINDOW_HEIGHT: u32 = (SCREEN_HEIGHT as u32) * SCALE;
 const TICKS_PER_LOOP: usize = 10;
 
 fn main() {
@@ -26,38 +20,8 @@ fn main() {
     }
 
     let sdl_context = sdl2::init().unwrap();
-    let video_subsystem = sdl_context.video().unwrap();
-    let audio_subsystem = sdl_context.audio().unwrap();
-
-    let desired_audiospec = AudioSpecDesired {
-        freq: Some(44100),
-        channels: Some(1), // mono
-        samples: None,     // default sample size
-    };
-
-    let device = audio_subsystem
-        .open_playback(None, &desired_audiospec, |spec| {
-            // initialize the audio callback
-            SquareWave {
-                phase_inc: 480.0 / spec.freq as f32,
-                phase: 0.0,
-                volume: 0.25,
-            }
-        })
-        .unwrap();
-
-    let window = video_subsystem
-        .window("CHIP8 EMULATOR", WINDOW_WIDTH, WINDOW_HEIGHT)
-        .position_centered()
-        .opengl()
-        .build()
-        .unwrap();
-
-    let mut canvas = window.into_canvas().present_vsync().build().unwrap();
-
-    // canvas.set_draw_color(Color::RGB(0, 0, 0));
-    canvas.clear();
-    canvas.present();
+    let mut video_driver = VideoDriver::new(&sdl_context);
+    let audio_driver = AudioDriver::new(&sdl_context);
 
     let mut event_pump = sdl_context.event_pump().unwrap();
 
@@ -111,33 +75,15 @@ fn main() {
         let sound_timer = chip8_emu.get_sound_timer();
         if sound_timer > 0 {
             // play sound
-            device.resume();
+            audio_driver.play_sound();
         } else {
             // stop sound
-            device.pause();
+            audio_driver.stop_sound();
         }
 
-        draw_screen(&chip8_emu, &mut canvas);
+        let screen = chip8_emu.get_screen();
+        video_driver.draw_screen(screen);
     }
-}
-
-fn draw_screen(chip8: &Chip8, canvas: &mut WindowCanvas) {
-    // Black background
-    canvas.set_draw_color(Color::RGB(0, 0, 0));
-    canvas.clear();
-
-    let chip8_screen = chip8.get_screen();
-
-    canvas.set_draw_color(Color::RGB(255, 255, 255));
-    for (idx, pixel) in chip8_screen.iter().enumerate() {
-        if *pixel {
-            let x = (idx % SCREEN_WIDTH) as u32;
-            let y = (idx / SCREEN_WIDTH) as u32;
-            let rect: Rect = Rect::new((x * SCALE) as i32, (y * SCALE) as i32, SCALE, SCALE);
-            canvas.fill_rect(rect).unwrap();
-        }
-    }
-    canvas.present();
 }
 
 /*
